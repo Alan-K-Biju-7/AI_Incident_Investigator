@@ -1,0 +1,6 @@
+import{describe,expect,it}from'vitest';import{anomaly,confidence,mergeTimeline,normalizeTimestamp,rankEvidence}from'./engine.js';import{demo}from'./seed.js';
+describe('timestamp normalization',()=>{it('normalizes zoned and naive timestamps',()=>{expect(normalizeTimestamp('2026-08-18 14:32:00')).toBe('2026-08-18T14:32:00.000Z');expect(normalizeTimestamp('not-a-date')).toBeNull()})});
+describe('timeline merging',()=>{it('orders events and removes exact second duplicates',()=>{const x=mergeTimeline([{time:'2026-01-01T00:02:00Z',title:'B'},{time:'2026-01-01T00:01:00Z',title:'A'},{time:'2026-01-01T00:01:00Z',title:'A'}]);expect(x.map(e=>e.title)).toEqual(['A','B'])})});
+describe('metric anomaly detection',()=>{it('flags a sharp departure from baseline',()=>{expect(anomaly([10,11,10,11,50],4,2).at(-1)?.anomaly).toBe(true)})});
+describe('confidence scoring',()=>{it('is deterministic and bounded',()=>{expect(confidence({direct:35,temporal:20,independent:18,verification:25,plausibility:0,contradiction:-7}).total).toBe(91);expect(confidence({direct:80,temporal:80,independent:0,verification:0,plausibility:0,contradiction:0}).total).toBe(100)})});
+describe('hybrid retrieval',()=>{it('ranks matching reliable evidence first',()=>{expect(rankEvidence(demo.evidence,'pool utilization').at(0)?.item.id).toBe('ev-metric')})});

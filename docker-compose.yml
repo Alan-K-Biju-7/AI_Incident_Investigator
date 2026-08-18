@@ -1,0 +1,13 @@
+services:
+  aegis:
+    build: .
+    ports: ["8787:8787"]
+    environment:
+      LLM_PROVIDER: mock
+      INVESTIGATION_CONFIDENCE_THRESHOLD: 0.88
+    volumes:
+      - aegis-data:/app/.data
+      - aegis-uploads:/app/uploads
+volumes:
+  aegis-data:
+  aegis-uploads:

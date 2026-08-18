@@ -1,0 +1,64 @@
+name: Daily project health
+
+on:
+  schedule:
+    # 09:00 Asia/Kolkata. GitHub schedules use UTC.
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  active-window:
+    runs-on: ubuntu-latest
+    outputs:
+      active: ${{ steps.window.outputs.active }}
+    steps:
+      - id: window
+        name: Check seven-day window
+        shell: bash
+        run: |
+          today="$(date -u +%F)"
+          if [[ "$today" < "2026-08-18" || "$today" > "2026-08-24" ]]; then
+            echo "active=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "active=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  verify:
+    needs: active-window
+    if: needs.active-window.outputs.active == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run investigation engine tests
+        run: npm test
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Upload production bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-production-${{ github.run_number }}
+          path: |
+            dist/
+            dist-server/
+          retention-days: 7
+
