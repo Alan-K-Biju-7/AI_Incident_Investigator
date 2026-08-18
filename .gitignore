@@ -5,3 +5,4 @@ dist-server/
 uploads/
 .env
 *.log
+*.tsbuildinfo
